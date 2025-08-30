@@ -225,6 +225,15 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        
+        .api-info {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+            padding: 12px;
+            margin: 15px 0;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
@@ -262,8 +271,14 @@
                         <option value="es">Spanish</option>
                         <option value="fr">French</option>
                         <option value="de">German</option>
+                        <option value="zh">Chinese</option>
+                        <option value="ko">Korean</option>
                     </select>
                     <button id="translateBtn" disabled>Terjemahkan</button>
+                </div>
+                
+                <div class="api-info">
+                    <strong>Info:</strong> Tool ini menggunakan API LibreTranslate untuk terjemahan. Server mungkin memiliki batasan penggunaan.
                 </div>
                 
                 <div id="statusMessage" class="status-message"></div>
@@ -388,8 +403,8 @@
                 });
             }
             
-            // Translate extracted text
-            function translateText() {
+            // Translate extracted text using LibreTranslate
+            async function translateText() {
                 const textToTranslate = extractedText.value.trim();
                 if (!textToTranslate) {
                     showStatus('Tidak ada teks untuk diterjemahkan.', 'error');
@@ -400,24 +415,62 @@
                 showStatus('Menerjemahkan teks...', 'processing');
                 translateBtn.disabled = true;
                 
-                // Using a free translation API (might have limitations)
-                // Note: For production use, consider using a proper translation API with API key
-                fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(textToTranslate)}&langpair=auto|${targetLang}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.responseStatus === 200) {
-                            translatedText.value = data.responseData.translatedText;
-                            showStatus('Teks berhasil diterjemahkan.', 'success');
-                        } else {
-                            throw new Error(data.responseDetails || 'Terjadi kesalahan dalam penerjemahan');
-                        }
-                        translateBtn.disabled = false;
-                    })
-                    .catch(error => {
-                        showStatus('Gagal menerjemahkan: ' + error.message, 'error');
-                        translateBtn.disabled = false;
-                        console.error(error);
+                try {
+                    // Using LibreTranslate API (free and open source)
+                    // List of available servers: https://github.com/LibreTranslate/LibreTranslate
+                    const response = await fetch('https://libretranslate.de/translate', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            q: textToTranslate,
+                            source: "auto",
+                            target: targetLang,
+                            format: "text"
+                        }),
+                        headers: { "Content-Type": "application/json" }
                     });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok && data.translatedText) {
+                        translatedText.value = data.translatedText;
+                        showStatus('Teks berhasil diterjemahkan.', 'success');
+                    } else {
+                        throw new Error(data.error || 'Terjadi kesalahan dalam penerjemahan');
+                    }
+                } catch (error) {
+                    showStatus('Gagal menerjemahkan: ' + error.message, 'error');
+                    console.error(error);
+                    
+                    // Fallback: try another LibreTranslate server
+                    try {
+                        showStatus('Mencoba server alternatif...', 'processing');
+                        
+                        const fallbackResponse = await fetch('https://translate.argosopentech.com/translate', {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                q: textToTranslate,
+                                source: "auto",
+                                target: targetLang,
+                                format: "text"
+                            }),
+                            headers: { "Content-Type": "application/json" }
+                        });
+                        
+                        const fallbackData = await fallbackResponse.json();
+                        
+                        if (fallbackResponse.ok && fallbackData.translatedText) {
+                            translatedText.value = fallbackData.translatedText;
+                            showStatus('Teks berhasil diterjemahkan (menggunakan server alternatif).', 'success');
+                        } else {
+                            throw new Error(fallbackData.error || 'Terjadi kesalahan dalam penerjemahan');
+                        }
+                    } catch (fallbackError) {
+                        showStatus('Gagal menerjemahkan dengan semua server: ' + fallbackError.message, 'error');
+                        console.error(fallbackError);
+                    }
+                } finally {
+                    translateBtn.disabled = false;
+                }
             }
             
             // Show status message
