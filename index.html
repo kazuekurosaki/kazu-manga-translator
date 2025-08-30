@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manga Translation Tool</title>
+    <style>
+        :root {
+            --primary-color: #4a6fa5;
+            --secondary-color: #6e9cd2;
+            --accent-color: #ff7e5f;
+            --dark-color: #2c3e50;
+            --light-color: #f5f7fa;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --error-color: #e74c3c;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f0f2f5;
+            color: var(--dark-color);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 20px 0;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .app-description {
+            max-width: 800px;
+            margin: 0 auto 20px;
+            font-size: 1.1rem;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .image-section, .text-section {
+            flex: 1;
+            min-width: 300px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 8px;
+        }
+        
+        .upload-area {
+            border: 2px dashed var(--secondary-color);
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .upload-area:hover {
+            background-color: rgba(110, 156, 210, 0.1);
+        }
+        
+        .upload-area.dragover {
+            background-color: rgba(110, 156, 210, 0.2);
+            border-color: var(--primary-color);
+        }
+        
+        .upload-icon {
+            font-size: 3rem;
+            color: var(--secondary-color);
+            margin-bottom: 15px;
+        }
+        
+        .image-preview {
+            max-width: 100%;
+            margin-top: 20px;
+            display: none;
+            border-radius: 4px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        button {
+            padding: 10px 15px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-weight: bold;
+        }
+        
+        button:hover {
+            background-color: var(--secondary-color);
+        }
+        
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .language-selector {
+            flex-grow: 1;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+            font-size: 1rem;
+        }
+        
+        .text-result {
+            margin-top: 20px;
+        }
+        
+        .status-message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            text-align: center;
+            display: none;
+        }
+        
+        .status-success {
+            background-color: rgba(46, 204, 113, 0.2);
+            color: var(--success-color);
+            border: 1px solid var(--success-color);
+        }
+        
+        .status-error {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: var(--error-color);
+            border: 1px solid var(--error-color);
+        }
+        
+        .status-processing {
+            background-color: rgba(243, 156, 18, 0.2);
+            color: var(--warning-color);
+            border: 1px solid var(--warning-color);
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 30px;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Manga Translation Tool</h1>
+            <p class="app-description">
+                Alat untuk menerjemahkan teks dalam gambar manga atau komik. Unggah gambar, ekstrak teks, dan terjemahkan ke bahasa yang diinginkan.
+            </p>
+        </header>
+        
+        <div class="main-content">
+            <section class="image-section">
+                <h2 class="section-title">Gambar Manga</h2>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <p>Klik atau tarik gambar ke sini untuk mengunggah</p>
+                    <p><small>Format yang didukung: JPG, PNG, GIF</small></p>
+                    <input type="file" id="fileInput" accept="image/jpeg,image/png,image/gif" style="display: none;">
+                </div>
+                
+                <div class="loading" id="imageLoading">
+                    <div class="spinner"></div>
+                    <p>Memproses gambar...</p>
+                </div>
+                
+                <img id="imagePreview" class="image-preview" alt="Pratinjau gambar">
+                
+                <div class="controls">
+                    <button id="extractTextBtn" disabled>Ekstrak Teks</button>
+                    <select id="languageSelector" class="language-selector">
+                        <option value="id">Indonesia</option>
+                        <option value="en">English</option>
+                        <option value="ja">Japanese</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
+                    </select>
+                    <button id="translateBtn" disabled>Terjemahkan</button>
+                </div>
+                
+                <div id="statusMessage" class="status-message"></div>
+            </section>
+            
+            <section class="text-section">
+                <h2 class="section-title">Teks Hasil Ekstraksi</h2>
+                <textarea id="extractedText" placeholder="Teks yang diekstrak akan muncul di sini..."></textarea>
+                
+                <h2 class="section-title">Hasil Terjemahan</h2>
+                <div class="text-result">
+                    <textarea id="translatedText" placeholder="Hasil terjemahan akan muncul di sini..."></textarea>
+                </div>
+            </section>
+        </div>
+        
+        <footer>
+            <p>Manga Translation Tool &copy; 2023 - Dibuat untuk GitHub Pages</p>
+            <p>Catatan: Tool ini menggunakan API eksternal untuk OCR dan terjemahan. Hasil mungkin tidak sempurna untuk teks dengan font khusus.</p>
+        </footer>
+    </div>
+
+    <!-- Load Tesseract.js from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elements
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+            const imagePreview = document.getElementById('imagePreview');
+            const extractTextBtn = document.getElementById('extractTextBtn');
+            const translateBtn = document.getElementById('translateBtn');
+            const languageSelector = document.getElementById('languageSelector');
+            const extractedText = document.getElementById('extractedText');
+            const translatedText = document.getElementById('translatedText');
+            const statusMessage = document.getElementById('statusMessage');
+            const imageLoading = document.getElementById('imageLoading');
+            
+            let uploadedImage = null;
+            
+            // Event listeners for file upload
+            uploadArea.addEventListener('click', () => {
+                fileInput.click();
+            });
+            
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                
+                if (e.dataTransfer.files.length) {
+                    handleImageUpload(e.dataTransfer.files[0]);
+                }
+            });
+            
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length) {
+                    handleImageUpload(e.target.files[0]);
+                }
+            });
+            
+            // Extract text button event
+            extractTextBtn.addEventListener('click', extractTextFromImage);
+            
+            // Translate button event
+            translateBtn.addEventListener('click', translateText);
+            
+            // Handle image upload
+            function handleImageUpload(file) {
+                if (!file.type.match('image.*')) {
+                    showStatus('Silakan unggah file gambar yang valid.', 'error');
+                    return;
+                }
+                
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    uploadedImage = e.target.result;
+                    imagePreview.src = uploadedImage;
+                    imagePreview.style.display = 'block';
+                    extractTextBtn.disabled = false;
+                    showStatus('Gambar berhasil diunggah. Klik "Ekstrak Teks" untuk memulai.', 'success');
+                };
+                
+                reader.readAsDataURL(file);
+            }
+            
+            // Extract text from image using Tesseract.js
+            function extractTextFromImage() {
+                if (!uploadedImage) {
+                    showStatus('Silakan unggah gambar terlebih dahulu.', 'error');
+                    return;
+                }
+                
+                imageLoading.style.display = 'block';
+                extractTextBtn.disabled = true;
+                showStatus('Sedang mengekstrak teks dari gambar...', 'processing');
+                
+                Tesseract.recognize(
+                    uploadedImage,
+                    'jpn+eng', // Japanese and English languages
+                    { logger: m => console.log(m) }
+                ).then(({ data: { text } }) => {
+                    extractedText.value = text;
+                    translateBtn.disabled = false;
+                    imageLoading.style.display = 'none';
+                    showStatus('Teks berhasil diekstrak dari gambar.', 'success');
+                }).catch(err => {
+                    imageLoading.style.display = 'none';
+                    extractTextBtn.disabled = false;
+                    showStatus('Gagal mengekstrak teks: ' + err.message, 'error');
+                    console.error(err);
+                });
+            }
+            
+            // Translate extracted text
+            function translateText() {
+                const textToTranslate = extractedText.value.trim();
+                if (!textToTranslate) {
+                    showStatus('Tidak ada teks untuk diterjemahkan.', 'error');
+                    return;
+                }
+                
+                const targetLang = languageSelector.value;
+                showStatus('Menerjemahkan teks...', 'processing');
+                translateBtn.disabled = true;
+                
+                // Using a free translation API (might have limitations)
+                // Note: For production use, consider using a proper translation API with API key
+                fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(textToTranslate)}&langpair=auto|${targetLang}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.responseStatus === 200) {
+                            translatedText.value = data.responseData.translatedText;
+                            showStatus('Teks berhasil diterjemahkan.', 'success');
+                        } else {
+                            throw new Error(data.responseDetails || 'Terjadi kesalahan dalam penerjemahan');
+                        }
+                        translateBtn.disabled = false;
+                    })
+                    .catch(error => {
+                        showStatus('Gagal menerjemahkan: ' + error.message, 'error');
+                        translateBtn.disabled = false;
+                        console.error(error);
+                    });
+            }
+            
+            // Show status message
+            function showStatus(message, type) {
+                statusMessage.textContent = message;
+                statusMessage.className = 'status-message';
+                
+                switch (type) {
+                    case 'success':
+                        statusMessage.classList.add('status-success');
+                        break;
+                    case 'error':
+                        statusMessage.classList.add('status-error');
+                        break;
+                    case 'processing':
+                        statusMessage.classList.add('status-processing');
+                        break;
+                }
+                
+                statusMessage.style.display = 'block';
+                
+                // Auto hide success messages after 5 seconds
+                if (type === 'success') {
+                    setTimeout(() => {
+                        statusMessage.style.display = 'none';
+                    }, 5000);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
