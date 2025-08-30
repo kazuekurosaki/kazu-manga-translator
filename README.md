@@ -1,0 +1,1 @@
+# kazu-manga-translator
